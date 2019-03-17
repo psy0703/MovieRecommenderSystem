@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import org.apache.spark.SparkConf
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 //创建样例类
@@ -107,7 +108,50 @@ object StatisticsRecommender {
       .format("com.mongodb.spark.sql")
       .save()
 
+    //统计每个电影的平均得分
+    val averageMoviesDF: DataFrame = spark.sql("select mid,avg(score) as avg from ratings group by mid")
 
+    averageMoviesDF.write
+        .option("uri",mongoConfig.uri)
+        .option("collection",AVERAGE_MOVIES)
+        .mode("overwrite")
+        .format("com.mongodb.spark.sql")
+        .save()
+
+    //统计每个电影类别中评分最高的10个电影
+    //movie和评分做inner连接
+    val movieWithScore: DataFrame = movieDF.join(averageMoviesDF, Seq("mid", "mid"))
+
+    //所有的电影类别
+    val genres = List("Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family", "Fantasy", "Foreign", "History", "Horror", "Music", "Mystery"
+      , "Romance", "Science", "Tv", "Thriller", "War", "Western")
+
+    //将电影类别转换成RDD
+    val genresRDD: RDD[String] = spark.sparkContext.makeRDD(genres)
+    //得到genres和movieRow的笛卡儿积，计算电影类别top10
+    val genresTopMovie: DataFrame = genresRDD.cartesian(movieWithScore.rdd)
+      .filter {
+        //用bool判断条件进行过滤
+        case (genres, row) => row.getAs[String]("genres").toLowerCase().contains(genres.toLowerCase())
+      }
+      .map { //对数据集进行简化，只需要genres,(mid,avg)，把mid和avg包装成元祖，方便之后聚合
+        // 将整个数据集的数据量减小，生成RDD[String,Iter[mid,avg]]
+        case (genres, row) => {
+          (genres, (row.getAs[Int]("mid"), row.getAs[Double]("avg")))
+        }
+      }.groupByKey()
+      .map {
+        case (genres, items) =>
+          GenresRecommendation(genres, items.toList.sortWith(_._2 > _._2).take(10).map(item => Recommendation(item._1, item._2)))
+      }.toDF()
+
+    // 输出数据到MongoDB
+    genresTopMovie.write
+        .option("uri",mongoConfig.uri)
+        .option("collection",GENRES_TOP_MOVIES)
+        .mode("overwrite")
+        .format("com.mongodb.spark.sql")
+        .save()
     spark.stop()
   }
 }
