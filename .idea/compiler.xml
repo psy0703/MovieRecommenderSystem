@@ -9,6 +9,7 @@
         <module name="DataLoader" />
         <module name="OfflineRecommender" />
         <module name="StatisticsRecommender" />
+        <module name="StreamingRecommender" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8" />

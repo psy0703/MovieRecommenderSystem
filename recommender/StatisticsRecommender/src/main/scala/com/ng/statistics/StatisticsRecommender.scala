@@ -2,19 +2,20 @@ package com.ng.statistics
 
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 //创建样例类
 //统计推荐只需要movie和rating数据
-case class Movie(val mid: Int, val name: String, val desc: String, val timelong: String, val issue: String, val shoot: String, val language: String, val genres: String, val actors: String, val directors: String)
+case class Movie( mid: Int, name: String, descri: String, timeLong: String, issue: String,
+                  shoot: String, language: String, genres: String, actors: String, derectors: String
+                )
 
-case class Rating(val uid: Int, val mid: Int, val score: Double, val timestamp: Int)
+case class Rating(uid: Int, mid: Int, score: Double, timestamp: Int)
 
 //创建MongoDB配置样例类
-case class MongoConfig(val uri: String, val db: String)
+case class MongoConfig(uri: String, db: String)
 
 //定义一个标准推荐对象
 case class Recommendation(mid: Int, score: Double)
@@ -24,10 +25,10 @@ case class GenresRecommendation(genres: String, recs: Seq[Recommendation])
 
 object StatisticsRecommender {
   val MONGODB_RATING_COLLECTION = "Rating"
-  val mONGODB_MOVIE_COLLECTION = "Movie"
+  val MONGODB_MOVIE_COLLECTION = "Movie"
   //统计表的名称
   //历史热门电影表
-  val RATE_MORE_MOVIES = "RateMoreMOvies"
+  val RATE_MORE_MOVIES = "RateMoreMovies"
   //近期热门电影表
   val RATE_MORE_RECENTLY_MOVIES = "RateMoreRecentlyMovies"
   //电影平均评分表
@@ -63,7 +64,7 @@ object StatisticsRecommender {
 
     val movieDF: DataFrame = spark.read
       .option("uri", mongoConfig.uri)
-      .option("collection", mONGODB_MOVIE_COLLECTION)
+      .option("collection", MONGODB_MOVIE_COLLECTION)
       .format("com.mongodb.spark.sql")
       .load()
       .as[Movie]

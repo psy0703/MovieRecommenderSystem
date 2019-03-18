@@ -15,8 +15,8 @@ import org.jblas.DoubleMatrix
   *         @2019-03-17 20:34 
   */
 //声明样例类
-case class Movie(mid: Int, name: String, descri: String, timelong: String, issue: String,
-                 shoot: String,language: String, genres: String, actors: String, directors: String )
+case class Movie(mid: Int, name: String, descri: String, timeLong: String, issue: String,
+                 shoot: String, language: String, genres: String, actors: String, derectors: String )
 case class MovieRating(uid:Int,mid:Int,score:Double,timestamp:Int)
 case class MongoConfig(uri:String,db:String)
 // 标准推荐对象，mid,score
@@ -69,7 +69,7 @@ object OfflineRecommender {
     //电影数据集RDD
     val movieRDD: RDD[Int] = spark.read
       .option("uri", mongoConfig.uri)
-      .option("collectioin", MONGODB_MOVIE_COLLECTION)
+      .option("collection", MONGODB_MOVIE_COLLECTION)
       .format("com.mongodb.spark.sql")
       .load()
       .as[Movie]
